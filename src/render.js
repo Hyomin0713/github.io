@@ -92,6 +92,23 @@ li.style.setProperty("--type-color", c)
     const newVal = !isCompletedOn(ev, dCtx)
     setCompleted(ev, dCtx, newVal)
   })
+let tTimer = null
+li.addEventListener("touchstart", () => {
+  tTimer = setTimeout(() => {
+    const newVal = !isCompletedOn(ev, dCtx)
+    setCompleted(ev, dCtx, newVal)
+    tTimer = null
+  }, 450)
+}, { passive: true })
+
+;["touchend", "touchcancel", "touchmove"].forEach(t => {
+  li.addEventListener(t, () => {
+    if (tTimer) {
+      clearTimeout(tTimer)
+      tTimer = null
+    }
+  }, { passive: true })
+})
 
   let lpTimer = null
   li.addEventListener("pointerdown", () => {
