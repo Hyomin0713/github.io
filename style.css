@@ -720,3 +720,46 @@ textarea {
 @keyframes strike {
   to { transform: scaleX(1); }
 }
+/* ===== 타입(종류) 편집 UI: 아이콘은 숨기고 색상 중심으로 ===== */
+.type-editor .type-icon-list,
+.type-editor .type-icon-btn,
+.event-type-icon {
+  display: none !important;
+}
+
+/* 색상 선택 버튼을 더 명확하게 */
+.type-editor .type-color-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.type-editor .type-color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.18);
+  background: var(--color, #999);
+}
+
+.type-editor .type-color-btn.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.12);
+}
+
+.event-item::before {
+  content: "";
+  position: relative;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--type-color, rgba(0,255,133,.7));
+  opacity: .95;
+}
+
+.event-type-dot {
+  background: var(--type-color, rgba(0,255,133,.7)) !important;
+}
