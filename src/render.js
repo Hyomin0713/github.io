@@ -17,7 +17,12 @@ function mkItem(ev, ctxDate) {
   const done = isCompletedOn(ev, dCtx)
   if (done) li.classList.add("completed")
   const tp = getTypeById(ev.typeId)
-  li.style.setProperty("--type-color", tp.color)
+  const c =
+  tp && typeof tp.color === "string" && tp.color.trim() && tp.color.trim() !== "undefined"
+    ? tp.color.trim()
+    : "#00ff85"
+li.style.setProperty("--type-color", c)
+
 
   const checkBtn = document.createElement("button")
   checkBtn.type = "button"
