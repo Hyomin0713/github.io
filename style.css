@@ -816,3 +816,65 @@ textarea {
   padding:0;
 }
 
+.event-item{ position:relative; }
+
+/* 체크 버튼을 왼쪽 “고정 위치”에 배치 (빨간 동그라미 자리) */
+.event-check-btn{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:2;
+
+  width:22px;
+  height:22px;
+  border-radius:999px;
+
+  display:none;          
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);
+}
+
+.event-item.completed .event-check-btn{
+  display:flex;
+}
+
+.event-content{
+  padding-left:10px; 
+}
+.event-item.completed .event-content{
+  padding-left:44px; 
+}
+
+.event-title{
+  position:relative;
+  display:inline-block;
+}
+
+.event-title::after{
+  content:"";
+  position:absolute;
+  left:-2px;
+  right:-2px;
+  top:50%;
+  height:2px;
+  transform:translateY(-50%) scaleX(0);
+  transform-origin:left center;
+  background:rgba(255,255,255,.75);
+  border-radius:999px;
+  pointer-events:none;
+  transition:transform 180ms ease;
+}
+
+
+.event-item.completed .event-title::after{
+  transform:translateY(-50%) scaleX(1);
+}
+
+
+.event-item.completed .event-title,
+.event-item.completed .event-time{
+  opacity:.72;
+}
