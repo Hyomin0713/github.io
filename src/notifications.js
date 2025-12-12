@@ -10,15 +10,15 @@ export function enqueueNotiAutoComplete(ex) {
   pendingNotiActions.push({ eventId: ex.eventId, date: ex.date })
 }
 
-export function flushPendingNotiAutoComplete(completeFn) {
+export async function flushPendingNotiAutoComplete(completeFn) {
   if (!pendingNotiActions.length) return
   const arr = pendingNotiActions.slice()
   pendingNotiActions = []
-  arr.forEach(ex => {
+  for (const ex of arr) {
     try {
-      completeFn(ex.eventId, ex.date)
+      await completeFn(ex.eventId, ex.date)
     } catch (e) {}
-  })
+  }
 }
 
 export function queueNotiAction(ex) {
@@ -49,20 +49,17 @@ export async function initLocalNoti() {
   if (ln && ln.addListener) {
     ln.addListener("localNotificationActionPerformed", async info => {
       try {
-        const n = info && info.notification
-        const ex = n && n.extra ? n.extra : null
+        const n = info?.notification
+        const ex = n?.extra
         if (!ex || !ex.eventId || !ex.date) return
 
-        if (!state.u || !state.evs || state.evs.length === 0) {
-          enqueueNotiAutoComplete(ex)
-          return
-        }
+        enqueueNotiAutoComplete(ex)
 
-        const mod = await import("./events.js")
-        if (mod && typeof mod.completeByIdAndDate === "function") {
-          await mod.completeByIdAndDate(ex.eventId, ex.date)
-        } else {
-          enqueueNotiAutoComplete(ex)
+        if (state?.evs?.length) {
+          const mod = await import("./events.js")
+          if (mod?.completeByIdAndDate) {
+            await mod.completeByIdAndDate(ex.eventId, ex.date)
+          }
         }
       } catch (e) {}
     })
@@ -84,7 +81,12 @@ export async function scheduleLocal(ev, occDate) {
         {
           id,
           title: "일정 알림",
-          body: ev.title + " / " + occDate.toLocaleDateString() + " " + fmtT(occDate),
+          body:
+            ev.title +
+            " / " +
+            occDate.toLocaleDateString() +
+            " " +
+            fmtT(occDate),
           schedule: { at: trigger },
           smallIcon: "ic_launcher",
           extra: { eventId: ev.id, date: fmtD(occDate) }
