@@ -138,4 +138,16 @@ export function bindTypeEditor(drawAll) {
     dom.elTypeEditor.style.display = "none"
   }
 
+dom.elTypeEditor.addEventListener("input", e => {
+  const el = e.target
+  if (!el.classList.contains("type-color-input")) return
+
+  const idx = Number(el.dataset.index)
+  if (!Number.isFinite(idx) || !state.evTypes[idx]) return
+
+  state.evTypes[idx].color = el.value
+  saveSettings()
+  drawAll()
+})
+
 }
