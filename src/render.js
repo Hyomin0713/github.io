@@ -3,7 +3,7 @@ import { dom } from "./dom.js"
 import { fmtD, fmtT, sameD } from "./utils.js"
 import { getTypeById } from "./types.js"
 import { evByD, hasEv, nextOcc, isCompletedOn, setCompleted } from "./events.js"
-
+///
 const hooks = { showMd: null }
 
 export function setRenderHooks({ showMd } = {}) {
