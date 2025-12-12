@@ -139,45 +139,45 @@
               <div class="type-editor-row" data-index="0">
                 <div class="type-editor-row-title">종류 1</div>
                 <input type="text" class="type-name-input" placeholder="예: 게임 일정" />
-                <div class="type-icon-list">
-                  <button type="button" class="type-icon-btn" data-icon="🎮">🎮</button>
-                  <button type="button" class="type-icon-btn" data-icon="⭐">⭐</button>
-                  <button type="button" class="type-icon-btn" data-icon="📌">📌</button>
-                </div>
-                <div class="type-color-list">
-                  <button type="button" class="type-color-btn" data-color="#FFD54F"></button>
-                  <button type="button" class="type-color-btn" data-color="#FF5252"></button>
-                  <button type="button" class="type-color-btn" data-color="#448AFF"></button>
+                <div class="type-color-picker-row">
+                  <span class="type-color-label">색상</span>
+                  <input
+                    type="color"
+                    class="type-color-input"
+                    data-index="0"
+                    value="#FFD54F"
+                    aria-label="종류 1 색상 선택"
+                  />
                 </div>
               </div>
 
               <div class="type-editor-row" data-index="1">
                 <div class="type-editor-row-title">종류 2</div>
                 <input type="text" class="type-name-input" placeholder="예: 개인 일정" />
-                <div class="type-icon-list">
-                  <button type="button" class="type-icon-btn" data-icon="👤">👤</button>
-                  <button type="button" class="type-icon-btn" data-icon="❤️">❤️</button>
-                  <button type="button" class="type-icon-btn" data-icon="🔥">🔥</button>
-                </div>
-                <div class="type-color-list">
-                  <button type="button" class="type-color-btn" data-color="#FF5252"></button>
-                  <button type="button" class="type-color-btn" data-color="#FFD54F"></button>
-                  <button type="button" class="type-color-btn" data-color="#9C27B0"></button>
+                <div class="type-color-picker-row">
+                  <span class="type-color-label">색상</span>
+                  <input
+                    type="color"
+                    class="type-color-input"
+                    data-index="1"
+                    value="#FF5252"
+                    aria-label="종류 2 색상 선택"
+                  />
                 </div>
               </div>
 
               <div class="type-editor-row" data-index="2">
                 <div class="type-editor-row-title">종류 3</div>
                 <input type="text" class="type-name-input" placeholder="예: 취미 일정" />
-                <div class="type-icon-list">
-                  <button type="button" class="type-icon-btn" data-icon="🎨">🎨</button>
-                  <button type="button" class="type-icon-btn" data-icon="✏️">✏️</button>
-                  <button type="button" class="type-icon-btn" data-icon="⭐">⭐</button>
-                </div>
-                <div class="type-color-list">
-                  <button type="button" class="type-color-btn" data-color="#448AFF"></button>
-                  <button type="button" class="type-color-btn" data-color="#4CAF50"></button>
-                  <button type="button" class="type-color-btn" data-color="#9E9E9E"></button>
+                <div class="type-color-picker-row">
+                  <span class="type-color-label">색상</span>
+                  <input
+                    type="color"
+                    class="type-color-input"
+                    data-index="2"
+                    value="#448AFF"
+                    aria-label="종류 3 색상 선택"
+                  />
                 </div>
               </div>
             </div>
@@ -218,7 +218,7 @@
     </div>
   </div>
 
-    <div id="noti-action-modal" class="modal" aria-hidden="true">
+  <div id="noti-action-modal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <h2>일정 알림</h2>
       <div class="field" style="margin-top:10px">
