@@ -13,16 +13,17 @@ export function setRenderHooks({ showMd } = {}) {
 function mkItem(ev, ctxDate) {
   const li = document.createElement("li")
   li.className = "event-item"
+
   const dCtx = ctxDate instanceof Date ? ctxDate : new Date(ev.startTime)
   const done = isCompletedOn(ev, dCtx)
   if (done) li.classList.add("completed")
+
   const tp = getTypeById(ev.typeId)
   const c =
-  tp && typeof tp.color === "string" && tp.color.trim() && tp.color.trim() !== "undefined"
-    ? tp.color.trim()
-    : "#00ff85"
-li.style.setProperty("--type-color", c)
-
+    tp && typeof tp.color === "string" && tp.color.trim() && tp.color.trim() !== "undefined"
+      ? tp.color.trim()
+      : "#00ff85"
+  li.style.setProperty("--type-color", c)
 
   const checkBtn = document.createElement("button")
   checkBtn.type = "button"
@@ -92,34 +93,51 @@ li.style.setProperty("--type-color", c)
     const newVal = !isCompletedOn(ev, dCtx)
     setCompleted(ev, dCtx, newVal)
   })
-let tTimer = null
-li.addEventListener("touchstart", () => {
-  tTimer = setTimeout(() => {
-    const newVal = !isCompletedOn(ev, dCtx)
-    setCompleted(ev, dCtx, newVal)
-    tTimer = null
-  }, 450)
-}, { passive: true })
 
-;["touchend", "touchcancel", "touchmove"].forEach(t => {
-  li.addEventListener(t, () => {
-    if (tTimer) {
-      clearTimeout(tTimer)
-      tTimer = null
-    }
-  }, { passive: true })
-})
+  let consumedByLongPress = false
+  let touchActive = false
+  let tTimer = null
+
+  li.addEventListener(
+    "touchstart",
+    () => {
+      touchActive = true
+      tTimer = setTimeout(() => {
+        consumedByLongPress = true
+        const newVal = !isCompletedOn(ev, dCtx)
+        setCompleted(ev, dCtx, newVal)
+        tTimer = null
+      }, 450)
+    },
+    { passive: true }
+  )
+
+  ;["touchend", "touchcancel", "touchmove"].forEach(tn => {
+    li.addEventListener(
+      tn,
+      () => {
+        touchActive = false
+        if (tTimer) {
+          clearTimeout(tTimer)
+          tTimer = null
+        }
+      },
+      { passive: true }
+    )
+  })
 
   let lpTimer = null
   li.addEventListener("pointerdown", () => {
+    if (touchActive) return
     lpTimer = setTimeout(() => {
+      consumedByLongPress = true
       const newVal = !isCompletedOn(ev, dCtx)
       setCompleted(ev, dCtx, newVal)
       lpTimer = null
     }, 450)
   })
-  ;["pointerup", "pointercancel", "pointerleave"].forEach(t => {
-    li.addEventListener(t, () => {
+  ;["pointerup", "pointercancel", "pointerleave"].forEach(tn => {
+    li.addEventListener(tn, () => {
       if (lpTimer) {
         clearTimeout(lpTimer)
         lpTimer = null
@@ -128,6 +146,10 @@ li.addEventListener("touchstart", () => {
   })
 
   li.addEventListener("click", () => {
+    if (consumedByLongPress) {
+      consumedByLongPress = false
+      return
+    }
     if (hooks.showMd) hooks.showMd(ev, dCtx)
   })
 
@@ -143,6 +165,7 @@ export function drawHome() {
     if (!o) return
     if (!best || o < best.occ) best = { ev, occ: o }
   })
+
   dom.elNextBody.innerHTML = ""
   if (!best) {
     dom.elNextBody.classList.add("empty")
@@ -227,6 +250,7 @@ export function drawSel() {
   if (!state.dSel) state.dSel = new Date()
   if (state.msOn && state.msSet.size > 1) dom.elSelLbl.textContent = fmtD(state.dSel) + " 포함 " + state.msSet.size + "일"
   else dom.elSelLbl.textContent = fmtD(state.dSel) + " 일정"
+
   const list = evByD(state.dSel)
   dom.elSelList.innerHTML = ""
   if (!list.length) {
