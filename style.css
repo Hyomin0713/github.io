@@ -788,12 +788,13 @@ textarea {
 .event-item::before{
   content:none !important;
 }
-.event-item{ position:relative !important; overflow:hidden !important; }
+.event-item{ position:relative; overflow:hidden; }
 .event-item::after{
   content:"";
   position:absolute; top:0; right:0;
   width:20%; height:100%;
-  background:#ff00ff !important;   
-  opacity:.35 !important;
+  background: var(--type-color, #ff00ff);
+  opacity:.18;
   pointer-events:none;
 }
+
