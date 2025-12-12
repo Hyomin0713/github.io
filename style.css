@@ -699,3 +699,24 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.event-title { position: relative; }
+
+.event-item.completed .event-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.65;
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: strike 180ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes strike {
+  to { transform: scaleX(1); }
+}
