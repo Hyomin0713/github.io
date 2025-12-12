@@ -689,3 +689,130 @@ textarea {
     padding-top: 12px;
   }
 }
+.event-content { min-width: 0; }
+
+
+.event-title {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-title { position: relative; }
+
+.event-item.completed .event-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.65;
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: strike 180ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes strike {
+  to { transform: scaleX(1); }
+}
+/* ===== 타입(종류) 편집 UI: 아이콘은 숨기고 색상 중심으로 ===== */
+.type-editor .type-icon-list,
+.type-editor .type-icon-btn,
+.event-type-icon {
+  display: none !important;
+}
+
+.type-editor .type-color-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.type-editor .type-color-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.18);
+  background: var(--color, #999);
+}
+
+.type-editor .type-color-btn.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.12);
+}
+
+.event-item::before {
+  content: "";
+  position: relative;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--type-color, rgba(0,255,133,.7));
+  opacity: .95;
+}
+
+.event-type-dot {
+  background: var(--type-color, rgba(0,255,133,.7)) !important;
+}
+
+.event-item{
+  position: relative;
+  overflow: hidden;
+}
+
+.event-item::after{
+  content:"";
+  position:absolute;
+  top:0;
+  right:0;
+  width:20%;
+  height:100%;
+  background: var(--type-color, transparent);
+  opacity:.18;           
+  pointer-events:none;
+}
+
+.event-type-dot,
+.event-type-icon{
+  display:none !important;
+}
+
+.event-item::before{
+  content:none !important;
+}
+.event-item{ position:relative; overflow:hidden; }
+.event-item::after{
+  content:"";
+  position:absolute; top:0; right:0;
+  width:20%; height:100%;
+  background: var(--type-color, #ff00ff);
+  opacity:.18;
+  pointer-events:none;
+}
+.app-title{ color:#ff00ff !important; }
+.event-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.event-check-btn{
+  flex:0 0 auto;
+  width:28px;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:0;
+  padding:0;
+}
+
