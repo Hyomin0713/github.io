@@ -3,7 +3,7 @@ import { db, fb } from "./firebase.js"
 import { state } from "./state.js"
 import { dom } from "./dom.js"
 import { safeAddListener } from "./utils.js"
-
+///////
 export function getTypeById(id) {
   return state.evTypes.find(t => t.id === id) || state.evTypes[0]
 }
