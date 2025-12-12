@@ -727,7 +727,6 @@ textarea {
   display: none !important;
 }
 
-/* 색상 선택 버튼을 더 명확하게 */
 .type-editor .type-color-list {
   display: flex;
   gap: 10px;
@@ -762,4 +761,30 @@ textarea {
 
 .event-type-dot {
   background: var(--type-color, rgba(0,255,133,.7)) !important;
+}
+
+.event-item{
+  position: relative;
+  overflow: hidden;
+}
+
+.event-item::after{
+  content:"";
+  position:absolute;
+  top:0;
+  right:0;
+  width:20%;
+  height:100%;
+  background: var(--type-color, transparent);
+  opacity:.18;           
+  pointer-events:none;
+}
+
+.event-type-dot,
+.event-type-icon{
+  display:none !important;
+}
+
+.event-item::before{
+  content:none !important;
 }
