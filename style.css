@@ -797,4 +797,22 @@ textarea {
   opacity:.18;
   pointer-events:none;
 }
+.app-title{ color:#ff00ff !important; }
+.event-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.event-check-btn{
+  flex:0 0 auto;
+  width:28px;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:0;
+  padding:0;
+}
 
