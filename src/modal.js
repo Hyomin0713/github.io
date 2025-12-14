@@ -1,7 +1,7 @@
 import { dom } from "./dom.js"
 import { state } from "./state.js"
 import { fmtD, fmtT, sameD, safeAddListener } from "./utils.js"
-import { saveEvFromForm, delEvById } from "./events.js"
+import { saveEvFromForm, delEvById, delEvGroup } from "./events.js"
 
 export function showMd(ev) {
   if (!dom.elMd) return
@@ -12,10 +12,13 @@ export function showMd(ev) {
     dom.inpTitle.value = ev.title
     dom.inpDate.value = fmtD(base)
     dom.inpTime.value = fmtT(base)
+
+    if (dom.inpGroupId) dom.inpGroupId.value = ev.groupId || ""
     if (dom.inpEndDate) {
-      dom.inpEndDate.value = ""
-      dom.inpEndDate.disabled = true
-      dom.inpEndDate.parentElement?.classList.add("hidden")
+      const wrap = dom.inpEndDate.closest(".field")
+      const hasRange = !!ev.groupId && !!ev.rangeEnd
+      if (wrap) wrap.style.display = hasRange ? "" : "none"
+      dom.inpEndDate.value = hasRange ? ev.rangeEnd : ""
     }
     dom.selRepeat.value = ev.repeat || "none"
     dom.inpRem.value = ev.remindMinutes ?? 0
@@ -28,26 +31,28 @@ export function showMd(ev) {
     const now = new Date()
     const d = state.dSel || now
     dom.inpTitle.value = ""
-    dom.inpDate.value = fmtD(d)
-    const baseTime = sameD(d, now) ? fmtT(now) : "09:00"
-    dom.inpTime.value = baseTime
-    const ms = state.msOn && state.msSet && state.msSet.size > 1
+
+    if (dom.inpGroupId) dom.inpGroupId.value = ""
     if (dom.inpEndDate) {
-      if (ms) {
-        const arr = Array.from(state.msSet.values()).slice().sort()
-        const minD = arr[0]
-        const maxD = arr[arr.length - 1]
-        dom.inpDate.value = minD
-        dom.inpEndDate.value = maxD
-        dom.inpEndDate.disabled = false
-        dom.inpEndDate.parentElement?.classList.remove("hidden")
-      } else {
-        dom.inpEndDate.value = ""
-        dom.inpEndDate.disabled = true
-        dom.inpEndDate.parentElement?.classList.add("hidden")
+      const wrap = dom.inpEndDate.closest(".field")
+      let show = false
+      let s = fmtD(d)
+      let e = ""
+      if (state.msOn && state.msSet && state.msSet.size > 0) {
+        const arr = Array.from(state.msSet.values()).filter(Boolean).sort()
+        if (arr.length >= 2) {
+          show = true
+          s = arr[0]
+          e = arr[arr.length - 1]
+        }
       }
+      dom.inpDate.value = s
+      dom.inpEndDate.value = e
+      if (wrap) wrap.style.display = show ? "" : "none"
     }
 
+    const baseTime = sameD(d, now) ? fmtT(now) : "09:00"
+    dom.inpTime.value = baseTime
     dom.selRepeat.value = "none"
     dom.inpRem.value = 60
     dom.inpNote.value = ""
@@ -69,17 +74,25 @@ async function onSubmit(e) {
   const id = dom.inpId.value || null
   const title = dom.inpTitle.value.trim()
   const date = dom.inpDate.value
+  const endDate = dom.inpEndDate ? dom.inpEndDate.value : ""
   const time = dom.inpTime.value
+  const groupId = dom.inpGroupId ? dom.inpGroupId.value.trim() || null : null
   const repeat = dom.selRepeat.value
   const remindMinutes = Number(dom.inpRem.value || 0)
   const notes = dom.inpNote.value.trim()
   const typeId = dom.selType ? dom.selType.value || "type1" : "type1"
-  await saveEvFromForm({ id, title, date, time, repeat, remindMinutes, notes, typeId })
+  await saveEvFromForm({ id, groupId, title, date, endDate, time, repeat, remindMinutes, notes, typeId })
   hideMd()
 }
 
 async function onDelete() {
   const id = dom.inpId.value
+  const gid = dom.inpGroupId ? dom.inpGroupId.value.trim() : ""
+  if (gid) {
+    await delEvGroup(gid)
+    hideMd()
+    return
+  }
   if (!id) return
   await delEvById(id)
   hideMd()

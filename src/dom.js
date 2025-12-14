@@ -21,6 +21,7 @@ export const dom = {
   elMdTit: document.getElementById("modal-title"),
   fEv: document.getElementById("event-form"),
   inpId: document.getElementById("event-id"),
+  inpGroupId: document.getElementById("event-group-id"),
   inpTitle: document.getElementById("event-title"),
   inpDate: document.getElementById("event-date"),
   inpEndDate: document.getElementById("event-end-date"),

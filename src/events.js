@@ -109,7 +109,10 @@ export async function loadEv() {
         notes: dt.notes || "",
         timezone: dt.timezone || "Asia/Seoul",
         typeId: dt.typeId || "type1",
-        completedDates: Array.isArray(dt.completedDates) ? dt.completedDates : []
+        completedDates: Array.isArray(dt.completedDates) ? dt.completedDates : [],
+        groupId: dt.groupId || null,
+        rangeStart: dt.rangeStart || null,
+        rangeEnd: dt.rangeEnd || null
       })
     })
     state.evs = arr
@@ -121,32 +124,49 @@ export async function loadEv() {
   if (hooks.onAfterChange) hooks.onAfterChange()
 }
 
-export async function saveEvFromForm({ id, title, date, endDate, time, repeat, remindMinutes, notes, typeId }) {
+export async function saveEvFromForm({ id, groupId, title, date, endDate, time, repeat, remindMinutes, notes, typeId }) {
   if (!state.u) return
   if (!title || !date || !time) return
 
+  const colRef = fb.collection(db, "users", state.u.uid, "events")
+
+  const normRange = (a, b) => {
+    const da = parseD(a)
+    const dbb = parseD(b)
+    if (da > dbb) return [b, a]
+    return [a, b]
+  }
+
+  const rangeDates = (s, e) => {
+    const [ss, ee] = normRange(s, e)
+    const a = parseD(ss)
+    const b = parseD(ee)
+    const out = []
+    for (let d = new Date(a.getFullYear(), a.getMonth(), a.getDate()); d <= b; d.setDate(d.getDate() + 1)) {
+      out.push(fmtD(d))
+    }
+    return out
+  }
+
   fnLd(true)
   try {
-    const colRef = fb.collection(db, "users", state.u.uid, "events")
-
     if (!id) {
-      let dates = [date]
+      let sDate = date
+      let eDate = endDate || date
 
-      const hasRange = typeof endDate === "string" && endDate && endDate !== date
-      if (hasRange) {
-        const a = parseD(date)
-        const b = parseD(endDate)
-        const start = a <= b ? a : b
-        const end = a <= b ? b : a
-        const tmp = []
-        for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
-          tmp.push(fmtD(d))
-        }
-        dates = tmp
-      } else if (state.msOn && state.msSet && state.msSet.size > 0) {
-        const set = new Set([date, ...Array.from(state.msSet.values())])
-        dates = Array.from(set.values()).sort()
+      if (state.msOn && state.msSet && state.msSet.size > 0) {
+        const arr = Array.from(state.msSet.values()).filter(Boolean)
+        arr.push(date)
+        arr.sort()
+        sDate = arr[0]
+        eDate = arr[arr.length - 1]
+      } else {
+        ;[sDate, eDate] = normRange(sDate, eDate)
       }
+
+      const isRange = sDate !== eDate
+      const gid = isRange ? (groupId || (String(Date.now()) + "-" + Math.random().toString(16).slice(2))) : null
+      const dates = isRange ? rangeDates(sDate, eDate) : [date]
 
       const tasks = dates.map(dStr => {
         const local = new Date(dStr + "T" + time)
@@ -161,6 +181,9 @@ export async function saveEvFromForm({ id, title, date, endDate, time, repeat, r
           typeId,
           completedDates: [],
           deleted: false,
+          groupId: gid,
+          rangeStart: isRange ? sDate : null,
+          rangeEnd: isRange ? eDate : null,
           createdAt: fb.serverTimestamp(),
           updatedAt: fb.serverTimestamp()
         })
@@ -168,20 +191,107 @@ export async function saveEvFromForm({ id, title, date, endDate, time, repeat, r
 
       await Promise.all(tasks)
     } else {
-      const local = new Date(date + "T" + time)
-      const iso = local.toISOString()
-      const ref = fb.doc(db, "users", state.u.uid, "events", id)
-      await fb.updateDoc(ref, {
-        title,
-        startTime: iso,
-        remindMinutes,
-        repeat,
-        notes,
-        typeId,
-        updatedAt: fb.serverTimestamp()
-      })
+      if (groupId && endDate) {
+        let [sDate, eDate] = normRange(date, endDate)
+        const desired = new Set(rangeDates(sDate, eDate))
+
+        const q = fb.query(colRef, fb.where("groupId", "==", groupId))
+        const snap = await fb.getDocs(q)
+
+        const existing = new Map()
+        snap.forEach(docu => {
+          const dt = docu.data()
+          if (dt.deleted) return
+          const d = fmtD(new Date(dt.startTime))
+          existing.set(d, { id: docu.id, data: dt })
+        })
+
+        const updates = []
+        const adds = []
+
+        for (const [dStr, obj] of existing.entries()) {
+          if (!desired.has(dStr)) {
+            const ref = fb.doc(db, "users", state.u.uid, "events", obj.id)
+            updates.push(fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() }))
+          } else {
+            const local = new Date(dStr + "T" + time)
+            const iso = local.toISOString()
+            const ref = fb.doc(db, "users", state.u.uid, "events", obj.id)
+            updates.push(fb.updateDoc(ref, {
+              title,
+              startTime: iso,
+              remindMinutes,
+              repeat,
+              notes,
+              typeId,
+              groupId,
+              rangeStart: sDate,
+              rangeEnd: eDate,
+              updatedAt: fb.serverTimestamp()
+            }))
+          }
+        }
+
+        for (const dStr of desired.values()) {
+          if (existing.has(dStr)) continue
+          const local = new Date(dStr + "T" + time)
+          const iso = local.toISOString()
+          adds.push(fb.addDoc(colRef, {
+            title,
+            startTime: iso,
+            remindMinutes,
+            repeat,
+            notes,
+            timezone: "Asia/Seoul",
+            typeId,
+            completedDates: [],
+            deleted: false,
+            groupId,
+            rangeStart: sDate,
+            rangeEnd: eDate,
+            createdAt: fb.serverTimestamp(),
+            updatedAt: fb.serverTimestamp()
+          }))
+        }
+
+        await Promise.all([...updates, ...adds])
+      } else {
+        const local = new Date(date + "T" + time)
+        const iso = local.toISOString()
+        const ref = fb.doc(db, "users", state.u.uid, "events", id)
+        await fb.updateDoc(ref, {
+          title,
+          startTime: iso,
+          remindMinutes,
+          repeat,
+          notes,
+          typeId,
+          updatedAt: fb.serverTimestamp()
+        })
+      }
     }
 
+    await loadEv()
+  } finally {
+    fnLd(false)
+  }
+}
+
+export async function delEvGroup(groupId) {
+  if (!state.u || !groupId) return
+  fnLd(true)
+  try {
+    const colRef = fb.collection(db, "users", state.u.uid, "events")
+    const q = fb.query(colRef, fb.where("groupId", "==", groupId))
+    const snap = await fb.getDocs(q)
+    const tasks = []
+    snap.forEach(d => {
+      const dt = d.data()
+      if (dt.deleted) return
+      const ref = fb.doc(db, "users", state.u.uid, "events", d.id)
+      tasks.push(fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() }))
+    })
+    await Promise.all(tasks)
     await loadEv()
   } finally {
     fnLd(false)
