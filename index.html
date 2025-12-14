@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>알림 일정 캘린더</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121212" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-heading">
+          <h1 class="app-title">알림 일정</h1>
+          <p class="app-subtitle">오늘과 다음 일정 한눈에 보기</p>
+        </div>
+      </div>
+      <button id="btn-open-calendar" class="header-btn" type="button">
+        <span>캘린더</span>
+      </button>
+    </header>
+
+    <main>
+      <section id="home-screen" class="screen active">
+        <section class="next-event-card" id="next-event-card">
+          <div class="next-event-header">
+            <h2>다음 일정</h2>
+            <span class="pill pill-soft">자동 알림</span>
+          </div>
+          <div id="next-event-body" class="next-event-body empty">
+            <p>앞으로 예정된 일정이 없습니다.</p>
+          </div>
+        </section>
+
+        <section class="today-list">
+          <div class="section-header">
+            <h2>Today</h2>
+            <span class="section-caption">오늘 자정까지의 일정만 표시됩니다</span>
+          </div>
+          <ul id="today-event-list" class="event-list"></ul>
+        </section>
+      </section>
+
+      <section id="calendar-screen" class="screen">
+        <header class="calendar-header">
+          <button id="btn-back-home" class="header-btn ghost" type="button">← 홈</button>
+          <div class="month-nav">
+            <button id="btn-prev-month" class="nav-btn" type="button">‹</button>
+            <span id="month-label"></span>
+            <button id="btn-next-month" class="nav-btn" type="button">›</button>
+          </div>
+        </header>
+
+        <section class="calendar-wrapper">
+          <div class="view-toggle">
+            <button data-view="month" class="view-btn active" type="button">월</button>
+            <button data-view="day" class="view-btn" type="button">일</button>
+          </div>
+
+          <div class="multi-select-row">
+            <button id="btn-multi-toggle" class="secondary-btn small-btn" type="button">여러 날짜 선택</button>
+          </div>
+
+          <div class="calendar-grid-header">
+            <div>일</div>
+            <div>월</div>
+            <div>화</div>
+            <div>수</div>
+            <div>목</div>
+            <div>금</div>
+            <div>토</div>
+          </div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+        </section>
+
+        <section class="selected-day-panel">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <h2 id="selected-date-label"></h2>
+              <span class="section-caption">날짜를 탭해 일정을 확인하세요</span>
+            </div>
+            <button id="btn-add-event-calendar" class="primary-btn" type="button">+ 추가</button>
+          </div>
+          <ul id="selected-day-event-list" class="event-list"></ul>
+        </section>
+      </section>
+    </main>
+
+    <button id="btn-add-event-home" class="fab-btn" type="button">+</button>
+
+    <nav class="bottom-nav">
+      <button class="bottom-nav-btn active" data-screen="home-screen" type="button">홈</button>
+      <button class="bottom-nav-btn" data-screen="calendar-screen" type="button">캘린더</button>
+    </nav>
+  </div>
+
+  <div id="event-modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h2 id="modal-title">일정 추가</h2>
+      <form id="event-form">
+        <input type="hidden" id="event-id" />
+
+        <label class="field">
+          <span>제목</span>
+          <input id="event-title" type="text" placeholder="일정 제목을 입력하세요" required />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>날짜</span>
+            <input id="event-date" type="date" required />
+          </label>
+          <label class="field">
+            <span>시간</span>
+            <input id="event-time" type="time" required />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>일정 종류</span>
+
+          <div class="type-select-row">
+            <select id="event-type">
+              <option value="type1">게임 일정</option>
+              <option value="type2">개인 일정</option>
+              <option value="type3">취미 일정</option>
+            </select>
+            <button id="btn-edit-types" class="ghost-btn small-btn" type="button">종류 편집</button>
+          </div>
+
+          <div id="type-editor" class="type-editor">
+            <div class="type-editor-header">
+              <div class="type-editor-header-left">
+                <span>종류 편집</span>
+                <select id="type-editor-select" class="type-editor-select" aria-label="편집할 종류 선택">
+                  <option value="0">종류 1</option>
+                  <option value="1">종류 2</option>
+                  <option value="2">종류 3</option>
+                </select>
+              </div>
+              <button type="button" id="btn-type-editor-close" class="ghost-btn small-btn">완료</button>
+            </div>
+
+            <div class="type-editor-body">
+              <div class="type-editor-row" data-index="0">
+                <div class="type-editor-row-title">종류 1</div>
+                <input type="text" class="type-name-input" placeholder="예: 게임 일정" />
+
+                <div class="type-icon-picker-row">
+                  <span class="type-icon-label">아이콘</span>
+                  <div class="type-icon-list" aria-label="종류 1 아이콘 선택">
+                    <button type="button" class="type-icon-btn" data-icon="🎮">🎮</button>
+                    <button type="button" class="type-icon-btn" data-icon="📌">📌</button>
+                    <button type="button" class="type-icon-btn" data-icon="💼">💼</button>
+                    <button type="button" class="type-icon-btn" data-icon="🏃">🏃</button>
+                    <button type="button" class="type-icon-btn" data-icon="🍽️">🍽️</button>
+                    <button type="button" class="type-icon-btn" data-icon="📚">📚</button>
+                    <button type="button" class="type-icon-btn" data-icon="❤️">❤️</button>
+                    <button type="button" class="type-icon-btn" data-icon="⭐">⭐</button>
+                  </div>
+                  <input
+                    type="text"
+                    class="type-icon-input"
+                    data-index="0"
+                    inputmode="text"
+                    maxlength="4"
+                    placeholder="직접 입력"
+                    aria-label="종류 1 아이콘 직접 입력"
+                  />
+                </div>
+
+                <div class="type-color-picker-row">
+                  <span class="type-color-label">색상</span>
+                  <input
+                    type="color"
+                    class="type-color-input"
+                    data-index="0"
+                    value="#FFD54F"
+                    aria-label="종류 1 색상 선택"
+                  />
+                </div>
+              </div>
+
+              <div class="type-editor-row" data-index="1">
+                <div class="type-editor-row-title">종류 2</div>
+                <input type="text" class="type-name-input" placeholder="예: 개인 일정" />
+
+                <div class="type-icon-picker-row">
+                  <span class="type-icon-label">아이콘</span>
+                  <div class="type-icon-list" aria-label="종류 2 아이콘 선택">
+                    <button type="button" class="type-icon-btn" data-icon="👤">👤</button>
+                    <button type="button" class="type-icon-btn" data-icon="📌">📌</button>
+                    <button type="button" class="type-icon-btn" data-icon="💼">💼</button>
+                    <button type="button" class="type-icon-btn" data-icon="🏃">🏃</button>
+                    <button type="button" class="type-icon-btn" data-icon="🍽️">🍽️</button>
+                    <button type="button" class="type-icon-btn" data-icon="📚">📚</button>
+                    <button type="button" class="type-icon-btn" data-icon="❤️">❤️</button>
+                    <button type="button" class="type-icon-btn" data-icon="⭐">⭐</button>
+                  </div>
+                  <input
+                    type="text"
+                    class="type-icon-input"
+                    data-index="1"
+                    inputmode="text"
+                    maxlength="4"
+                    placeholder="직접 입력"
+                    aria-label="종류 2 아이콘 직접 입력"
+                  />
+                </div>
+
+                <div class="type-color-picker-row">
+                  <span class="type-color-label">색상</span>
+                  <input
+                    type="color"
+                    class="type-color-input"
+                    data-index="1"
+                    value="#FF5252"
+                    aria-label="종류 2 색상 선택"
+                  />
+                </div>
+              </div>
+
+              <div class="type-editor-row" data-index="2">
+                <div class="type-editor-row-title">종류 3</div>
+                <input type="text" class="type-name-input" placeholder="예: 취미 일정" />
+
+                <div class="type-icon-picker-row">
+                  <span class="type-icon-label">아이콘</span>
+                  <div class="type-icon-list" aria-label="종류 3 아이콘 선택">
+                    <button type="button" class="type-icon-btn" data-icon="🎨">🎨</button>
+                    <button type="button" class="type-icon-btn" data-icon="📌">📌</button>
+                    <button type="button" class="type-icon-btn" data-icon="💼">💼</button>
+                    <button type="button" class="type-icon-btn" data-icon="🏃">🏃</button>
+                    <button type="button" class="type-icon-btn" data-icon="🍽️">🍽️</button>
+                    <button type="button" class="type-icon-btn" data-icon="📚">📚</button>
+                    <button type="button" class="type-icon-btn" data-icon="❤️">❤️</button>
+                    <button type="button" class="type-icon-btn" data-icon="⭐">⭐</button>
+                  </div>
+                  <input
+                    type="text"
+                    class="type-icon-input"
+                    data-index="2"
+                    inputmode="text"
+                    maxlength="4"
+                    placeholder="직접 입력"
+                    aria-label="종류 3 아이콘 직접 입력"
+                  />
+                </div>
+
+                <div class="type-color-picker-row">
+                  <span class="type-color-label">색상</span>
+                  <input
+                    type="color"
+                    class="type-color-input"
+                    data-index="2"
+                    value="#448AFF"
+                    aria-label="종류 3 색상 선택"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>반복</span>
+            <select id="event-repeat">
+              <option value="none">반복 없음</option>
+              <option value="daily">매일</option>
+              <option value="weekly">매주</option>
+              <option value="monthly">매월</option>
+              <option value="yearly">매년</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>알림 (분 전)</span>
+            <input id="event-remind" type="number" min="0" value="60" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>메모</span>
+          <textarea id="event-notes" rows="3" placeholder="메모를 입력하세요"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" id="btn-delete-event" class="danger-btn hidden">삭제</button>
+          <div class="modal-actions-right">
+            <button type="button" id="btn-cancel-modal" class="secondary-btn">취소</button>
+            <button type="submit" class="primary-btn">저장</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="noti-action-modal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <h2>일정 알림</h2>
+      <div class="field" style="margin-top:10px">
+        <div id="noti-action-title" style="font-size:16px;font-weight:700"></div>
+        <div id="noti-action-datetime" style="margin-top:6px;opacity:.8"></div>
+      </div>
+      <div class="modal-actions" style="margin-top:14px">
+        <button type="button" id="btn-noti-complete" class="primary-btn">완료</button>
+        <div class="modal-actions-right">
+          <button type="button" id="btn-noti-open" class="secondary-btn">보기</button>
+          <button type="button" id="btn-noti-dismiss" class="secondary-btn">나중에</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay" class="overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
