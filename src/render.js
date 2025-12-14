@@ -185,6 +185,7 @@ export function drawHome() {
     const diffMs = best.occ.getTime() - now.getTime()
     rmEl.textContent = diffMs <= 0 ? "곧 시작됩니다." : fmtEta(now.getTime(), best.occ.getTime()) + " 후 시작"
 
+
     dom.elNextBody.appendChild(tEl)
     dom.elNextBody.appendChild(tmEl)
     dom.elNextBody.appendChild(rmEl)

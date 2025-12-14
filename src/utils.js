@@ -38,6 +38,7 @@ export function safeAddListener(el, type, fn, opts) {
 export function fmtEta(fromMs, toMs) {
   const diff = Math.max(0, toMs - fromMs)
   const totalMin = Math.floor(diff / 60000)
+  if (totalMin <= 0) return "0분"
 
   const MIN_H = 60
   const MIN_D = 60 * 24
@@ -51,5 +52,12 @@ export function fmtEta(fromMs, toMs) {
   const h = Math.floor(m / MIN_H);  m %= MIN_H
   const mi = m
 
-  return `${mo}달 ${w}주 ${d}일 ${h}시간 ${mi}분`
+  const parts = []
+  if (mo) parts.push(`${mo}달`)
+  if (w) parts.push(`${w}주`)
+  if (d) parts.push(`${d}일`)
+  if (h) parts.push(`${h}시간`)
+  if (mi || parts.length === 0) parts.push(`${mi}분`)
+
+  return parts.join(" ")
 }
