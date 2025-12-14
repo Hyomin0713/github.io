@@ -998,3 +998,70 @@ textarea {
 .event-item.completed .event-check{
   border-color: rgba(255,255,255,.85);
 }
+/* modal layout hardening */
+.modal-content {
+  width: min(92vw, 560px);
+  max-width: 560px;
+  box-sizing: border-box;
+}
+
+#event-form {
+  display: block;
+}
+
+.field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.field input,
+.field select,
+.field textarea,
+.type-select-row,
+.modal-actions {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.field-row > .field {
+  flex: 1 1 220px;
+}
+
+.type-select-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.type-select-row > select {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.type-select-row > button {
+  flex: 0 0 auto;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.modal-actions-right {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
