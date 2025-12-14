@@ -12,6 +12,11 @@ export function showMd(ev) {
     dom.inpTitle.value = ev.title
     dom.inpDate.value = fmtD(base)
     dom.inpTime.value = fmtT(base)
+    if (dom.inpEndDate) {
+      dom.inpEndDate.value = ""
+      dom.inpEndDate.disabled = true
+      dom.inpEndDate.parentElement?.classList.add("hidden")
+    }
     dom.selRepeat.value = ev.repeat || "none"
     dom.inpRem.value = ev.remindMinutes ?? 0
     dom.inpNote.value = ev.notes || ""
@@ -26,6 +31,23 @@ export function showMd(ev) {
     dom.inpDate.value = fmtD(d)
     const baseTime = sameD(d, now) ? fmtT(now) : "09:00"
     dom.inpTime.value = baseTime
+    const ms = state.msOn && state.msSet && state.msSet.size > 1
+    if (dom.inpEndDate) {
+      if (ms) {
+        const arr = Array.from(state.msSet.values()).slice().sort()
+        const minD = arr[0]
+        const maxD = arr[arr.length - 1]
+        dom.inpDate.value = minD
+        dom.inpEndDate.value = maxD
+        dom.inpEndDate.disabled = false
+        dom.inpEndDate.parentElement?.classList.remove("hidden")
+      } else {
+        dom.inpEndDate.value = ""
+        dom.inpEndDate.disabled = true
+        dom.inpEndDate.parentElement?.classList.add("hidden")
+      }
+    }
+
     dom.selRepeat.value = "none"
     dom.inpRem.value = 60
     dom.inpNote.value = ""

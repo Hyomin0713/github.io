@@ -23,6 +23,7 @@ export const dom = {
   inpId: document.getElementById("event-id"),
   inpTitle: document.getElementById("event-title"),
   inpDate: document.getElementById("event-date"),
+  inpEndDate: document.getElementById("event-end-date"),
   inpTime: document.getElementById("event-time"),
   selRepeat: document.getElementById("event-repeat"),
   inpRem: document.getElementById("event-remind"),

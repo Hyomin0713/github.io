@@ -121,15 +121,7 @@ export async function loadEv() {
   if (hooks.onAfterChange) hooks.onAfterChange()
 }
 
-function uniqSortedDates(arr) {
-  const set = new Set()
-  for (const v of arr) {
-    if (typeof v === "string" && v) set.add(v)
-  }
-  return Array.from(set.values()).sort()
-}
-
-export async function saveEvFromForm({ id, title, date, time, repeat, remindMinutes, notes, typeId }) {
+export async function saveEvFromForm({ id, title, date, endDate, time, repeat, remindMinutes, notes, typeId }) {
   if (!state.u) return
   if (!title || !date || !time) return
 
@@ -139,8 +131,21 @@ export async function saveEvFromForm({ id, title, date, time, repeat, remindMinu
 
     if (!id) {
       let dates = [date]
-      if (state.msOn && state.msSet && state.msSet.size > 0) {
-        dates = uniqSortedDates([date, ...Array.from(state.msSet.values())])
+
+      const hasRange = typeof endDate === "string" && endDate && endDate !== date
+      if (hasRange) {
+        const a = parseD(date)
+        const b = parseD(endDate)
+        const start = a <= b ? a : b
+        const end = a <= b ? b : a
+        const tmp = []
+        for (let d = new Date(start.getFullYear(), start.getMonth(), start.getDate()); d <= end; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+          tmp.push(fmtD(d))
+        }
+        dates = tmp
+      } else if (state.msOn && state.msSet && state.msSet.size > 0) {
+        const set = new Set([date, ...Array.from(state.msSet.values())])
+        dates = Array.from(set.values()).sort()
       }
 
       const tasks = dates.map(dStr => {
