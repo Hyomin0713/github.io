@@ -57,6 +57,39 @@ export function mtEv(ev, d) {
     default: return false
   }
 }
+export function nextOcc(ev, from) {
+  const base = new Date(ev.startTime)
+  const start = new Date(
+    from.getFullYear(),
+    from.getMonth(),
+    from.getDate(),
+    base.getHours(),
+    base.getMinutes(),
+    0,
+    0
+  )
+
+  if (ev.repeat === "none") {
+    if (base >= from) return base
+    return null
+  }
+
+  for (let i = 0; i < 366; i++) {
+    const date = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate() + i,
+      base.getHours(),
+      base.getMinutes(),
+      0,
+      0
+    )
+    if (!mtEv(ev, date)) continue
+    if (date >= from) return date
+  }
+
+  return null
+}
 
 export function evByD(d) {
   return state.evs.filter(e => mtEv(e, d)).sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
