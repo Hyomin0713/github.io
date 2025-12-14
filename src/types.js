@@ -1,47 +1,46 @@
 import { DEFAULT_TYPES } from "./config.js"
 import { db, fb } from "./firebase.js"
 import { state } from "./state.js"
-import { dom } from "./dom.js"
 import { safeAddListener } from "./utils.js"
+
+const $ = id => document.getElementById(id)
 
 export function getTypeById(id) {
   return state.evTypes.find(t => t.id === id) || state.evTypes[0]
 }
 
-function getSelectedIndex() {
-  if (dom.selTypeEditor) {
-    const v = Number(dom.selTypeEditor.value)
-    if (Number.isFinite(v)) return v
-  }
-  if (dom.elTypeEditor) {
-    const v = Number(dom.elTypeEditor.dataset.selected)
-    if (Number.isFinite(v)) return v
-  }
-  return 0
+function getEditor() {
+  return $("type-editor")
 }
 
-function setSelectedIndex(idx) {
-  const v = String(idx)
-  if (dom.selTypeEditor) dom.selTypeEditor.value = v
-  if (dom.elTypeEditor) dom.elTypeEditor.dataset.selected = v
+function getEditorSelect() {
+  return $("type-editor-select")
+}
+
+function getSelectedIndex() {
+  const sel = getEditorSelect()
+  const v = Number(sel?.value)
+  return Number.isFinite(v) ? v : 0
 }
 
 export function applyTypesToSelect() {
-  if (!dom.selType) return
-
-  const opts = dom.selType.options
-  for (let i = 0; i < state.evTypes.length && i < opts.length; i++) {
-    opts[i].value = state.evTypes[i].id
-    const ic = state.evTypes[i].icon ? state.evTypes[i].icon + " " : ""
-    opts[i].textContent = ic + state.evTypes[i].name
+  const selType = $("event-type")
+  if (selType) {
+    const opts = selType.options
+    for (let i = 0; i < state.evTypes.length && i < opts.length; i++) {
+      opts[i].value = state.evTypes[i].id
+      const ic = state.evTypes[i].icon ? state.evTypes[i].icon + " " : ""
+      opts[i].textContent = ic + state.evTypes[i].name
+    }
   }
 
-  if (dom.selTypeEditor) {
-    const eopts = dom.selTypeEditor.options
-    for (let i = 0; i < state.evTypes.length && i < eopts.length; i++) {
+  const selEditor = getEditorSelect()
+  if (selEditor) {
+    const opts = selEditor.options
+    for (let i = 0; i < state.evTypes.length && i < opts.length; i++) {
       const ic = state.evTypes[i].icon ? state.evTypes[i].icon + " " : ""
-      eopts[i].value = String(i)
-      eopts[i].textContent = ic + state.evTypes[i].name
+      opts[i].value = String(i)
+      opts[i].textContent = ic + state.evTypes[i].name
     }
   }
 }
@@ -52,26 +51,17 @@ export async function loadSettings() {
     const r = fb.doc(db, "users", state.u.uid, "settings")
     const s = await fb.getDoc(r)
     if (s.exists()) {
-      const dt = s.data()
-      if (Array.isArray(dt.eventTypes) && dt.eventTypes.length === 3) {
-        state.evTypes = dt.eventTypes.map((t, i) => {
-          const base = DEFAULT_TYPES[i]
-          return {
-            id: t.id || base.id,
-            name: t.name || base.name,
-            color: t.color || base.color,
-            icon: t.icon || base.icon
-          }
-        })
+      const d = s.data()
+      if (Array.isArray(d.eventTypes)) {
+        state.evTypes = d.eventTypes.map((t, i) => ({
+          id: t.id || DEFAULT_TYPES[i].id,
+          name: t.name || DEFAULT_TYPES[i].name,
+          color: t.color || DEFAULT_TYPES[i].color,
+          icon: t.icon || DEFAULT_TYPES[i].icon
+        }))
       }
-    } else {
-      await fb.setDoc(
-        fb.doc(db, "users", state.u.uid, "settings"),
-        { eventTypes: state.evTypes },
-        { merge: true }
-      )
     }
-  } catch (e) {}
+  } catch {}
   applyTypesToSelect()
 }
 
@@ -80,129 +70,85 @@ export async function saveSettings() {
   try {
     const r = fb.doc(db, "users", state.u.uid, "settings")
     await fb.setDoc(r, { eventTypes: state.evTypes }, { merge: true })
-  } catch (e) {}
+  } catch {}
 }
 
 export function syncTypeEditorFromTypes() {
-  if (!dom.elTypeEditor) return
-
   const idx = getSelectedIndex()
-  const tp = state.evTypes[idx] || DEFAULT_TYPES[idx]
-  if (!tp) return
+  const tp = state.evTypes[idx]
+  const editor = getEditor()
+  if (!editor || !tp) return
 
-  const row = dom.elTypeEditor.querySelector(".type-editor-row")
+  const row = editor.querySelector(".type-editor-row")
   if (!row) return
 
-  const titleEl = dom.elTypeEditor.querySelector("#type-editor-row-title")
-  if (titleEl) titleEl.textContent = `종류 ${idx + 1}`
+  row.querySelector(".type-name-input").value = tp.name
+  row.querySelector(".type-icon-input").value = tp.icon || ""
+  row.querySelector(".type-color-input").value = tp.color
 
-  const nameInput = row.querySelector(".type-name-input")
-  if (nameInput && nameInput.value !== tp.name) nameInput.value = tp.name
-
-  const iconInput = row.querySelector(".type-icon-input")
-  if (iconInput && iconInput.value !== (tp.icon || "")) iconInput.value = tp.icon || ""
-
-  const colorInput = row.querySelector(".type-color-input")
-  if (colorInput && colorInput.value.toLowerCase() !== (tp.color || "").toLowerCase()) {
-    colorInput.value = tp.color || "#ffffff"
-  }
-
-  row.querySelectorAll(".type-icon-btn").forEach(btn => {
-    const ic = btn.dataset.icon
-    btn.classList.toggle("selected", (tp.icon || "") === (ic || ""))
+  row.querySelectorAll(".type-icon-btn").forEach(b => {
+    b.classList.toggle("selected", b.dataset.icon === tp.icon)
   })
 }
 
 export function openTypeEditor() {
-  if (!dom.elTypeEditor) return
-
   applyTypesToSelect()
-
-  const idxFromEventType = Math.max(
-    0,
-    state.evTypes.findIndex(t => t.id === dom.selType?.value)
-  )
-  setSelectedIndex(idxFromEventType)
-
   syncTypeEditorFromTypes()
-  dom.elTypeEditor.style.display = "block"
-  dom.elTypeEditor.classList.add("show")
+  const ed = getEditor()
+  if (ed) {
+    ed.style.display = "block"
+    ed.classList.add("show")
+  }
 }
 
 export function closeTypeEditor() {
-  if (!dom.elTypeEditor) return
-  dom.elTypeEditor.classList.remove("show")
-  dom.elTypeEditor.style.display = "none"
+  const ed = getEditor()
+  if (ed) {
+    ed.classList.remove("show")
+    ed.style.display = "none"
+  }
 }
 
 export function bindTypeEditor(drawAll) {
-  safeAddListener(dom.btnEditTypes, "click", () => {
-    if (!dom.elTypeEditor) return
-    if (dom.elTypeEditor.classList.contains("show")) closeTypeEditor()
-    else openTypeEditor()
-  })
+  safeAddListener($("btn-edit-types"), "click", openTypeEditor)
+  safeAddListener($("btn-type-editor-close"), "click", closeTypeEditor)
 
-  safeAddListener(dom.btnTypeEditorClose, "click", () => closeTypeEditor())
-
-  safeAddListener(dom.selTypeEditor, "change", e => {
-    const v = Number(e.target.value)
-    if (!Number.isFinite(v)) return
-    setSelectedIndex(v)
+  safeAddListener(getEditorSelect(), "change", () => {
     syncTypeEditorFromTypes()
   })
 
-  if (!dom.elTypeEditor) return
-
-  safeAddListener(dom.elTypeEditor, "input", e => {
-    const t = e.target
-    if (!t?.classList) return
-
+  safeAddListener(getEditor(), "input", e => {
     const idx = getSelectedIndex()
-    if (!state.evTypes[idx]) return
+    const tp = state.evTypes[idx]
+    if (!tp) return
 
-    if (t.classList.contains("type-name-input")) {
-      state.evTypes[idx].name = t.value || DEFAULT_TYPES[idx].name
-      applyTypesToSelect()
-      saveSettings()
-      drawAll()
-      return
+    if (e.target.classList.contains("type-name-input")) {
+      tp.name = e.target.value
     }
 
-    if (t.classList.contains("type-icon-input")) {
-      state.evTypes[idx].icon = (t.value || "").trim()
-      applyTypesToSelect()
-      saveSettings()
-      syncTypeEditorFromTypes()
-      drawAll()
-      return
+    if (e.target.classList.contains("type-icon-input")) {
+      tp.icon = e.target.value.trim()
     }
 
-    if (t.classList.contains("type-color-input")) {
-      state.evTypes[idx].color = t.value
-      saveSettings()
-      syncTypeEditorFromTypes()
-      applyTypesToSelect()
-      drawAll()
+    if (e.target.classList.contains("type-color-input")) {
+      tp.color = e.target.value
     }
+
+    saveSettings()
+    applyTypesToSelect()
+    drawAll()
   })
 
-  safeAddListener(dom.elTypeEditor, "click", e => {
+  safeAddListener(getEditor(), "click", e => {
+    const btn = e.target.closest(".type-icon-btn")
+    if (!btn) return
     const idx = getSelectedIndex()
-    if (!state.evTypes[idx]) return
-
-    const iconBtn = e.target.closest(".type-icon-btn")
-    if (iconBtn) {
-      state.evTypes[idx].icon = iconBtn.dataset.icon || ""
-      applyTypesToSelect()
-      saveSettings()
-      syncTypeEditorFromTypes()
-      drawAll()
-      return
-    }
+    const tp = state.evTypes[idx]
+    if (!tp) return
+    tp.icon = btn.dataset.icon
+    saveSettings()
+    applyTypesToSelect()
+    syncTypeEditorFromTypes()
+    drawAll()
   })
-
-  dom.elTypeEditor.classList.remove("show")
-  dom.elTypeEditor.classList.remove("type-editor-floating")
-  dom.elTypeEditor.style.display = "none"
-  setSelectedIndex(0)
 }

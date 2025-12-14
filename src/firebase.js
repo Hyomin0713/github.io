@@ -1,11 +1,11 @@
-import { initializeApp } from "https:
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"
 import {
   getAuth,
   onAuthStateChanged,
   signInAnonymously,
   setPersistence,
   browserLocalPersistence
-} from "https:
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"
 import {
   getFirestore,
   collection,
@@ -18,7 +18,7 @@ import {
   query,
   orderBy,
   serverTimestamp
-} from "https:
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"
 
 import { fbCfg } from "./config.js"
 

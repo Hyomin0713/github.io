@@ -720,7 +720,7 @@ textarea {
 @keyframes strike {
   to { transform: scaleX(1); }
 }
-
+/* ===== 타입(종류) 편집 UI: 아이콘 + 색상 ===== */
 .type-editor-header{
   display:flex;
   align-items:center;
