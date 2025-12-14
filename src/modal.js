@@ -1,7 +1,7 @@
 import { dom } from "./dom.js"
 import { state } from "./state.js"
 import { fmtD, fmtT, sameD, safeAddListener } from "./utils.js"
-import { saveEvFromForm, delEvById, delGroupById } from "./events.js"
+import { saveEvFromForm, delEvById, delGroupById, deleteEventsByDates } from "./events.js"
 
 export function showMd(ev) {
   if (!dom.elMd) return
@@ -28,7 +28,6 @@ export function showMd(ev) {
     const d = state.dSel || now
     dom.inpTitle.value = ""
     dom.inpDate.value = fmtD(d)
-
     if (dom.inpEndDate) {
       let end = ""
       if (state.msOn && state.msSet && state.msSet.size > 1) {
@@ -38,7 +37,6 @@ export function showMd(ev) {
       }
       dom.inpEndDate.value = end
     }
-
     const baseTime = sameD(d, now) ? fmtT(now) : "09:00"
     dom.inpTime.value = baseTime
     dom.selRepeat.value = "none"
@@ -61,10 +59,10 @@ export function hideMd() {
 async function onSubmit(e) {
   e.preventDefault()
   const id = dom.inpId.value || null
-  const groupId = dom.inpGroupId ? (dom.inpGroupId.value || "") : ""
+  const groupId = dom.inpGroupId ? dom.inpGroupId.value || "" : ""
   const title = dom.inpTitle.value.trim()
   const date = dom.inpDate.value
-  const endDate = dom.inpEndDate ? (dom.inpEndDate.value || "") : ""
+  const endDate = dom.inpEndDate ? dom.inpEndDate.value || "" : ""
   const time = dom.inpTime.value
   const repeat = dom.selRepeat.value
   const remindMinutes = Number(dom.inpRem.value || 0)
@@ -75,10 +73,23 @@ async function onSubmit(e) {
 }
 
 async function onDelete() {
-  const id = dom.inpId.value
-  const groupId = dom.inpGroupId ? (dom.inpGroupId.value || "") : ""
-  if (groupId) await delGroupById(groupId)
-  else if (id) await delEvById(id)
+  const cnt = state.msSet ? state.msSet.size : 0
+  let msg = ""
+  if (cnt <= 1) {
+    msg = "이 날짜의 일정이 삭제됩니다.\n계속할까요?"
+  } else {
+    msg = `선택한 ${cnt}개의 날짜에 포함된 일정이 모두 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.\n계속할까요?`
+  }
+  if (!confirm(msg)) return
+
+  if (cnt > 1) {
+    await deleteEventsByDates(state.msSet)
+  } else {
+    const groupId = dom.inpGroupId ? dom.inpGroupId.value || "" : ""
+    const id = dom.inpId.value
+    if (groupId) await delGroupById(groupId)
+    else if (id) await delEvById(id)
+  }
   hideMd()
 }
 
