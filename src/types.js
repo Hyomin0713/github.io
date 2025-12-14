@@ -52,7 +52,7 @@ export async function loadSettings() {
     const s = await fb.getDoc(r)
     if (s.exists()) {
       const d = s.data()
-      if (Array.isArray(d.eventTypes)) {
+      if (Array.isArray(d.eventTypes) && d.eventTypes.length === 3) {
         state.evTypes = d.eventTypes.map((t, i) => ({
           id: t.id || DEFAULT_TYPES[i].id,
           name: t.name || DEFAULT_TYPES[i].name,
@@ -60,6 +60,8 @@ export async function loadSettings() {
           icon: t.icon || DEFAULT_TYPES[i].icon
         }))
       }
+    } else {
+      await fb.setDoc(r, { eventTypes: state.evTypes }, { merge: true })
     }
   } catch {}
   applyTypesToSelect()
@@ -82,73 +84,109 @@ export function syncTypeEditorFromTypes() {
   const row = editor.querySelector(".type-editor-row")
   if (!row) return
 
-  row.querySelector(".type-name-input").value = tp.name
-  row.querySelector(".type-icon-input").value = tp.icon || ""
-  row.querySelector(".type-color-input").value = tp.color
+  const titleEl = editor.querySelector("#type-editor-row-title")
+  if (titleEl) titleEl.textContent = `종류 ${idx + 1}`
+
+  const nameInput = row.querySelector(".type-name-input")
+  if (nameInput) nameInput.value = tp.name
+
+  const iconInput = row.querySelector(".type-icon-input")
+  if (iconInput) iconInput.value = tp.icon || ""
+
+  const colorInput = row.querySelector(".type-color-input")
+  if (colorInput) colorInput.value = tp.color
 
   row.querySelectorAll(".type-icon-btn").forEach(b => {
-    b.classList.toggle("selected", b.dataset.icon === tp.icon)
+    b.classList.toggle("selected", (b.dataset.icon || "") === (tp.icon || ""))
   })
 }
 
 export function openTypeEditor() {
+  const editor = getEditor()
+  if (!editor) return
+
   applyTypesToSelect()
-  syncTypeEditorFromTypes()
-  const ed = getEditor()
-  if (ed) {
-    ed.style.display = "block"
-    ed.classList.add("show")
+
+  const selType = $("event-type")
+  const curTypeId = selType?.value
+  let idx = 0
+  if (curTypeId) {
+    const found = state.evTypes.findIndex(t => t.id === curTypeId)
+    if (found >= 0) idx = found
   }
+
+  const selEditor = getEditorSelect()
+  if (selEditor) selEditor.value = String(idx)
+
+  syncTypeEditorFromTypes()
+  editor.style.display = "block"
+  editor.classList.add("show")
 }
 
 export function closeTypeEditor() {
   const ed = getEditor()
-  if (ed) {
-    ed.classList.remove("show")
-    ed.style.display = "none"
-  }
+  if (!ed) return
+  ed.classList.remove("show")
+  ed.style.display = "none"
 }
 
 export function bindTypeEditor(drawAll) {
-  safeAddListener($("btn-edit-types"), "click", openTypeEditor)
-  safeAddListener($("btn-type-editor-close"), "click", closeTypeEditor)
+  const btnOpen = $("btn-edit-types")
+  const btnClose = $("btn-type-editor-close")
+  const editor = getEditor()
+  const selEditor = getEditorSelect()
 
-  safeAddListener(getEditorSelect(), "change", () => {
+  safeAddListener(btnOpen, "click", () => openTypeEditor())
+  safeAddListener(btnClose, "click", () => closeTypeEditor())
+
+  safeAddListener(selEditor, "change", () => {
     syncTypeEditorFromTypes()
   })
 
-  safeAddListener(getEditor(), "input", e => {
+  safeAddListener(editor, "input", e => {
     const idx = getSelectedIndex()
     const tp = state.evTypes[idx]
     if (!tp) return
+    const t = e.target
+    if (!t?.classList) return
 
-    if (e.target.classList.contains("type-name-input")) {
-      tp.name = e.target.value
+    if (t.classList.contains("type-name-input")) {
+      tp.name = t.value || DEFAULT_TYPES[idx].name
+      saveSettings()
+      applyTypesToSelect()
+      syncTypeEditorFromTypes()
+      if (typeof drawAll === "function") drawAll()
+      return
     }
 
-    if (e.target.classList.contains("type-icon-input")) {
-      tp.icon = e.target.value.trim()
+    if (t.classList.contains("type-icon-input")) {
+      tp.icon = (t.value || "").trim()
+      saveSettings()
+      applyTypesToSelect()
+      syncTypeEditorFromTypes()
+      if (typeof drawAll === "function") drawAll()
+      return
     }
 
-    if (e.target.classList.contains("type-color-input")) {
-      tp.color = e.target.value
+    if (t.classList.contains("type-color-input")) {
+      tp.color = t.value
+      saveSettings()
+      applyTypesToSelect()
+      syncTypeEditorFromTypes()
+      if (typeof drawAll === "function") drawAll()
     }
-
-    saveSettings()
-    applyTypesToSelect()
-    drawAll()
   })
 
-  safeAddListener(getEditor(), "click", e => {
+  safeAddListener(editor, "click", e => {
     const btn = e.target.closest(".type-icon-btn")
     if (!btn) return
     const idx = getSelectedIndex()
     const tp = state.evTypes[idx]
     if (!tp) return
-    tp.icon = btn.dataset.icon
+    tp.icon = btn.dataset.icon || ""
     saveSettings()
     applyTypesToSelect()
     syncTypeEditorFromTypes()
-    drawAll()
+    if (typeof drawAll === "function") drawAll()
   })
 }
