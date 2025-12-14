@@ -611,6 +611,8 @@ main {
 .field-row {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+
 }
 
 .field-row .field {
@@ -628,6 +630,9 @@ textarea {
   align-items: center;
   justify-content: space-between;
   margin-top: 10px;
+
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .modal-actions-right {
@@ -721,19 +726,6 @@ textarea {
   to { transform: scaleX(1); }
 }
 /* ===== 타입(종류) 편집 UI: 아이콘 + 색상 ===== */
-.type-editor{
-  display:none;
-  margin-top:10px;
-  padding:12px;
-  border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.18);
-}
-
-.type-editor.show{
-  display:block;
-}
-
 .type-editor-header{
   display:flex;
   align-items:center;
@@ -757,7 +749,10 @@ textarea {
   padding: 0 10px;
 }
 
-.type-editor-body .type-editor-row{ display:block; }
+.type-editor-body .type-editor-row{ display:none; }
+.type-editor[data-selected="0"] .type-editor-row[data-index="0"]{ display:block; }
+.type-editor[data-selected="1"] .type-editor-row[data-index="1"]{ display:block; }
+.type-editor[data-selected="2"] .type-editor-row[data-index="2"]{ display:block; }
 
 .type-editor .type-icon-picker-row{
   display:flex;
@@ -998,70 +993,7 @@ textarea {
 .event-item.completed .event-check{
   border-color: rgba(255,255,255,.85);
 }
-/* modal layout hardening */
-.modal-content {
-  width: min(92vw, 560px);
-  max-width: 560px;
-  box-sizing: border-box;
-}
 
-#event-form {
-  display: block;
-}
-
-.field {
-  display: block;
-  width: 100%;
-  min-width: 0;
-}
-
-.field input,
-.field select,
-.field textarea,
-.type-select-row,
-.modal-actions {
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.field-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.field-row > .field {
-  flex: 1 1 220px;
-}
-
-.type-select-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.type-select-row > select {
-  flex: 1 1 220px;
-  min-width: 180px;
-}
-
-.type-select-row > button {
-  flex: 0 0 auto;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.modal-actions-right {
-  margin-left: auto;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+#event-form{display:block;}
+#event-form .field{display:block;width:100%;min-width:0;}
+#event-form input,#event-form select,#event-form textarea{width:100%;box-sizing:border-box;}

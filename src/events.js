@@ -110,9 +110,9 @@ export async function loadEv() {
         timezone: dt.timezone || "Asia/Seoul",
         typeId: dt.typeId || "type1",
         completedDates: Array.isArray(dt.completedDates) ? dt.completedDates : [],
-        groupId: dt.groupId || null,
-        rangeStart: dt.rangeStart || null,
-        rangeEnd: dt.rangeEnd || null
+        groupId: dt.groupId || "",
+        rangeStart: dt.rangeStart || "",
+        rangeEnd: dt.rangeEnd || ""
       })
     })
     state.evs = arr
@@ -124,54 +124,88 @@ export async function loadEv() {
   if (hooks.onAfterChange) hooks.onAfterChange()
 }
 
+function dateStrToDate(s) {
+  const p = String(s || "").split("-").map(Number)
+  if (p.length !== 3) return new Date()
+  return new Date(p[0], p[1] - 1, p[2])
+}
+
+function daysBetweenInclusive(aStr, bStr) {
+  const a = dateStrToDate(aStr)
+  const b = dateStrToDate(bStr)
+  const start = new Date(a.getFullYear(), a.getMonth(), a.getDate())
+  const end = new Date(b.getFullYear(), b.getMonth(), b.getDate())
+  const out = []
+  if (end < start) return out
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    out.push(fmtD(d))
+  }
+  return out
+}
+
+function normRange(date, endDate) {
+  if (!endDate) return { start: date, end: "" }
+  const a = dateStrToDate(date)
+  const b = dateStrToDate(endDate)
+  if (b < a) return { start: endDate, end: date }
+  return { start: date, end: endDate }
+}
+
+function genGroupId() {
+  return "g_" + Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
 export async function saveEvFromForm({ id, groupId, title, date, endDate, time, repeat, remindMinutes, notes, typeId }) {
   if (!state.u) return
   if (!title || !date || !time) return
 
   const colRef = fb.collection(db, "users", state.u.uid, "events")
-
-  const normRange = (a, b) => {
-    const da = parseD(a)
-    const dbb = parseD(b)
-    if (da > dbb) return [b, a]
-    return [a, b]
-  }
-
-  const rangeDates = (s, e) => {
-    const [ss, ee] = normRange(s, e)
-    const a = parseD(ss)
-    const b = parseD(ee)
-    const out = []
-    for (let d = new Date(a.getFullYear(), a.getMonth(), a.getDate()); d <= b; d.setDate(d.getDate() + 1)) {
-      out.push(fmtD(d))
-    }
-    return out
-  }
-
   fnLd(true)
   try {
-    if (!id) {
-      let sDate = date
-      let eDate = endDate || date
+    const rng = normRange(date, endDate)
+    const isRange = !!rng.end && rng.start !== rng.end
 
-      if (state.msOn && state.msSet && state.msSet.size > 0) {
-        const arr = Array.from(state.msSet.values()).filter(Boolean)
-        arr.push(date)
-        arr.sort()
-        sDate = arr[0]
-        eDate = arr[arr.length - 1]
-      } else {
-        ;[sDate, eDate] = normRange(sDate, eDate)
+    if (!id && !groupId) {
+      if (state.msOn && state.msSet && state.msSet.size > 1 && !endDate) {
+        const arr = Array.from(state.msSet.values()).sort()
+        if (arr.length) {
+          rng.start = arr[0]
+          rng.end = arr[arr.length - 1]
+        }
       }
+    }
 
-      const isRange = sDate !== eDate
-      const gid = isRange ? (groupId || (String(Date.now()) + "-" + Math.random().toString(16).slice(2))) : null
-      const dates = isRange ? rangeDates(sDate, eDate) : [date]
+    const wantRange = !!rng.end && rng.start !== rng.end
+    const gid = groupId || (wantRange ? genGroupId() : "")
 
-      const tasks = dates.map(dStr => {
-        const local = new Date(dStr + "T" + time)
+    if (!id && !groupId) {
+      if (wantRange) {
+        const dates = daysBetweenInclusive(rng.start, rng.end)
+        const tasks = dates.map(dStr => {
+          const local = new Date(dStr + "T" + time)
+          const iso = local.toISOString()
+          return fb.addDoc(colRef, {
+            title,
+            startTime: iso,
+            remindMinutes,
+            repeat,
+            notes,
+            timezone: "Asia/Seoul",
+            typeId,
+            completedDates: [],
+            deleted: false,
+            groupId: gid,
+            rangeStart: rng.start,
+            rangeEnd: rng.end,
+            createdAt: fb.serverTimestamp(),
+            updatedAt: fb.serverTimestamp()
+          })
+        })
+        await Promise.all(tasks)
+      } else {
+        const local = new Date(date + "T" + time)
         const iso = local.toISOString()
-        return fb.addDoc(colRef, {
+        await fb.addDoc(colRef, {
           title,
           startTime: iso,
           remindMinutes,
@@ -181,43 +215,37 @@ export async function saveEvFromForm({ id, groupId, title, date, endDate, time, 
           typeId,
           completedDates: [],
           deleted: false,
-          groupId: gid,
-          rangeStart: isRange ? sDate : null,
-          rangeEnd: isRange ? eDate : null,
+          groupId: "",
+          rangeStart: "",
+          rangeEnd: "",
           createdAt: fb.serverTimestamp(),
           updatedAt: fb.serverTimestamp()
         })
-      })
+      }
+      await loadEv()
+      return
+    }
 
-      await Promise.all(tasks)
-    } else {
-      if (groupId && endDate) {
-        let [sDate, eDate] = normRange(date, endDate)
-        const desired = new Set(rangeDates(sDate, eDate))
+    if (groupId) {
+      const dates = wantRange ? daysBetweenInclusive(rng.start, rng.end) : [rng.start]
+      const existing = state.evs.filter(e => e.groupId === groupId && !e.deleted)
+      const existingMap = new Map()
+      for (const e of existing) existingMap.set(fmtD(new Date(e.startTime)), e)
 
-        const q = fb.query(colRef, fb.where("groupId", "==", groupId))
-        const snap = await fb.getDocs(q)
+      const keepSet = new Set(dates)
 
-        const existing = new Map()
-        snap.forEach(docu => {
-          const dt = docu.data()
-          if (dt.deleted) return
-          const d = fmtD(new Date(dt.startTime))
-          existing.set(d, { id: docu.id, data: dt })
-        })
+      const writes = []
 
-        const updates = []
-        const adds = []
-
-        for (const [dStr, obj] of existing.entries()) {
-          if (!desired.has(dStr)) {
-            const ref = fb.doc(db, "users", state.u.uid, "events", obj.id)
-            updates.push(fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() }))
-          } else {
-            const local = new Date(dStr + "T" + time)
-            const iso = local.toISOString()
-            const ref = fb.doc(db, "users", state.u.uid, "events", obj.id)
-            updates.push(fb.updateDoc(ref, {
+      for (const e of existing) {
+        const dStr = fmtD(new Date(e.startTime))
+        const ref = fb.doc(db, "users", state.u.uid, "events", e.id)
+        if (!keepSet.has(dStr)) {
+          writes.push(fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() }))
+        } else {
+          const local = new Date(dStr + "T" + time)
+          const iso = local.toISOString()
+          writes.push(
+            fb.updateDoc(ref, {
               title,
               startTime: iso,
               remindMinutes,
@@ -225,18 +253,20 @@ export async function saveEvFromForm({ id, groupId, title, date, endDate, time, 
               notes,
               typeId,
               groupId,
-              rangeStart: sDate,
-              rangeEnd: eDate,
+              rangeStart: wantRange ? rng.start : "",
+              rangeEnd: wantRange ? rng.end : "",
               updatedAt: fb.serverTimestamp()
-            }))
-          }
+            })
+          )
         }
+      }
 
-        for (const dStr of desired.values()) {
-          if (existing.has(dStr)) continue
-          const local = new Date(dStr + "T" + time)
-          const iso = local.toISOString()
-          adds.push(fb.addDoc(colRef, {
+      for (const dStr of dates) {
+        if (existingMap.has(dStr)) continue
+        const local = new Date(dStr + "T" + time)
+        const iso = local.toISOString()
+        writes.push(
+          fb.addDoc(colRef, {
             title,
             startTime: iso,
             remindMinutes,
@@ -247,63 +277,63 @@ export async function saveEvFromForm({ id, groupId, title, date, endDate, time, 
             completedDates: [],
             deleted: false,
             groupId,
-            rangeStart: sDate,
-            rangeEnd: eDate,
+            rangeStart: wantRange ? rng.start : "",
+            rangeEnd: wantRange ? rng.end : "",
             createdAt: fb.serverTimestamp(),
             updatedAt: fb.serverTimestamp()
-          }))
-        }
-
-        await Promise.all([...updates, ...adds])
-      } else {
-        const local = new Date(date + "T" + time)
-        const iso = local.toISOString()
-        const ref = fb.doc(db, "users", state.u.uid, "events", id)
-        await fb.updateDoc(ref, {
-          title,
-          startTime: iso,
-          remindMinutes,
-          repeat,
-          notes,
-          typeId,
-          updatedAt: fb.serverTimestamp()
-        })
+          })
+        )
       }
+
+      await Promise.all(writes)
+      await loadEv()
+      return
     }
 
-    await loadEv()
-  } finally {
-    fnLd(false)
-  }
-}
-
-export async function delEvGroup(groupId) {
-  if (!state.u || !groupId) return
-  fnLd(true)
-  try {
-    const colRef = fb.collection(db, "users", state.u.uid, "events")
-    const q = fb.query(colRef, fb.where("groupId", "==", groupId))
-    const snap = await fb.getDocs(q)
-    const tasks = []
-    snap.forEach(d => {
-      const dt = d.data()
-      if (dt.deleted) return
-      const ref = fb.doc(db, "users", state.u.uid, "events", d.id)
-      tasks.push(fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() }))
+    const local = new Date(date + "T" + time)
+    const iso = local.toISOString()
+    const ref = fb.doc(db, "users", state.u.uid, "events", id)
+    await fb.updateDoc(ref, {
+      title,
+      startTime: iso,
+      remindMinutes,
+      repeat,
+      notes,
+      typeId,
+      updatedAt: fb.serverTimestamp()
     })
-    await Promise.all(tasks)
     await loadEv()
   } finally {
     fnLd(false)
   }
 }
 
-export async function delEvById(id) {
+export async function delEvByIdexport async function delEvById(id) {
   if (!state.u || !id) return
   fnLd(true)
   try {
     const ref = fb.doc(db, "users", state.u.uid, "events", id)
     await fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() })
+    await loadEv()
+  } finally {
+    fnLd(false)
+  }
+}
+
+
+export async function delGroupById(groupId) {
+  if (!state.u || !groupId) return
+  fnLd(true)
+  try {
+    const r = fb.collection(db, "users", state.u.uid, "events")
+    const qRef = fb.query(r, fb.where("groupId", "==", groupId))
+    const s = await fb.getDocs(qRef)
+    const tasks = []
+    s.forEach(d => {
+      const ref = fb.doc(db, "users", state.u.uid, "events", d.id)
+      tasks.push(fb.updateDoc(ref, { deleted: true, updatedAt: fb.serverTimestamp() }))
+    })
+    await Promise.all(tasks)
     await loadEv()
   } finally {
     fnLd(false)

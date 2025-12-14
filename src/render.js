@@ -1,6 +1,6 @@
 import { state } from "./state.js"
 import { dom } from "./dom.js"
-import { fmtD, fmtT, sameD, fmtEta } from "./utils.js"
+import { fmtD, fmtT, sameD } from "./utils.js"
 import { getTypeById } from "./types.js"
 import { evByD, hasEv, nextOcc, isCompletedOn, setCompleted } from "./events.js"
 
@@ -180,10 +180,10 @@ export function drawHome() {
     const tmEl = document.createElement("div")
     tmEl.className = "next-event-time"
     tmEl.textContent = best.occ.toLocaleDateString() + " " + fmtT(best.occ)
-    const eta = fmtEta(now.getTime(), best.occ.getTime())
+    const diffMin = Math.max(0, Math.round((best.occ.getTime() - now.getTime()) / 60000))
     const rmEl = document.createElement("div")
     rmEl.className = "next-event-remain"
-    rmEl.textContent = eta === "지금" ? "곧 시작됩니다." : eta.replace("뒤", "후 시작")
+    rmEl.textContent = diffMin === 0 ? "곧 시작됩니다." : diffMin + "분 후 시작"
     dom.elNextBody.appendChild(tEl)
     dom.elNextBody.appendChild(tmEl)
     dom.elNextBody.appendChild(rmEl)

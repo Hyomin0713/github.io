@@ -34,28 +34,3 @@ export function safeAddListener(el, type, fn, opts) {
   if (!el || !el.addEventListener) return
   el.addEventListener(type, fn, opts)
 }
-export function fmtEta(fromMs, toMs) {
-  let diff = Math.max(0, toMs - fromMs)
-  const totalMin = Math.floor(diff / 60000)
-  if (totalMin <= 0) return "지금"
-
-  const MIN_H = 60
-  const MIN_D = 60 * 24
-  const MIN_W = MIN_D * 7
-  const MIN_MO = MIN_D * 30
-
-  let m = totalMin
-  const mo = Math.floor(m / MIN_MO); m %= MIN_MO
-  const w = Math.floor(m / MIN_W);  m %= MIN_W
-  const d = Math.floor(m / MIN_D);  m %= MIN_D
-  const h = Math.floor(m / MIN_H);  m %= MIN_H
-  const mi = m
-
-  const parts = []
-  if (mo) parts.push(`${mo}달`)
-  if (w) parts.push(`${w}주`)
-  if (d) parts.push(`${d}일`)
-  if (h) parts.push(`${h}시간`)
-  if (mi) parts.push(`${mi}분`)
-  return parts.join(" ") + " 뒤"
-}
