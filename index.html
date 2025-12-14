@@ -69,8 +69,8 @@
     <div id="event-modal" class="modal" aria-hidden="true">
         <div class="modal-content">
             <h2 id="modal-title">일정 추가</h2>
-            <form id="event-form"> <input type="hidden" id="event-id" /> <label class="field"> <span>제목</span> <input id="event-title" type="text" placeholder="일정 제목을 입력하세요" required /> </label>
-                <div class="field-row"> <label class="field"> <span>날짜</span> <input id="event-date" type="date" required /> </label> <label class="field"> <span>시간</span> <input id="event-time" type="time" required /> </label> </div> <label class="field"> <span>일정 종류</span>
+            <form id="event-form"> <input type="hidden" id="event-id" /> <input type="hidden" id="event-group-id" /> <label class="field"> <span>제목</span> <input id="event-title" type="text" placeholder="일정 제목을 입력하세요" required /> </label>
+                <div class="field-row"> <label class="field"> <span>시작 날짜</span> <input id="event-date" type="date" required /> </label> <label class="field"> <span>끝 날짜</span> <input id="event-end-date" type="date" /> </label> </div> <label class="field"> <span>시간</span> <input id="event-time" type="time" required /> </label> <label class="field"> <span>일정 종류</span>
                     <div class="type-select-row"> <select id="event-type">
                             <option value="type1">게임 일정</option>
                             <option value="type2">개인 일정</option>
