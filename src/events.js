@@ -121,29 +121,50 @@ export async function loadEv() {
   if (hooks.onAfterChange) hooks.onAfterChange()
 }
 
+function uniqSortedDates(arr) {
+  const set = new Set()
+  for (const v of arr) {
+    if (typeof v === "string" && v) set.add(v)
+  }
+  return Array.from(set.values()).sort()
+}
+
 export async function saveEvFromForm({ id, title, date, time, repeat, remindMinutes, notes, typeId }) {
   if (!state.u) return
   if (!title || !date || !time) return
-  const local = new Date(date + "T" + time)
-  const iso = local.toISOString()
+
   fnLd(true)
   try {
     const colRef = fb.collection(db, "users", state.u.uid, "events")
+
     if (!id) {
-      await fb.addDoc(colRef, {
-        title,
-        startTime: iso,
-        remindMinutes,
-        repeat,
-        notes,
-        timezone: "Asia/Seoul",
-        typeId,
-        completedDates: [],
-        deleted: false,
-        createdAt: fb.serverTimestamp(),
-        updatedAt: fb.serverTimestamp()
+      let dates = [date]
+      if (state.msOn && state.msSet && state.msSet.size > 0) {
+        dates = uniqSortedDates([date, ...Array.from(state.msSet.values())])
+      }
+
+      const tasks = dates.map(dStr => {
+        const local = new Date(dStr + "T" + time)
+        const iso = local.toISOString()
+        return fb.addDoc(colRef, {
+          title,
+          startTime: iso,
+          remindMinutes,
+          repeat,
+          notes,
+          timezone: "Asia/Seoul",
+          typeId,
+          completedDates: [],
+          deleted: false,
+          createdAt: fb.serverTimestamp(),
+          updatedAt: fb.serverTimestamp()
+        })
       })
+
+      await Promise.all(tasks)
     } else {
+      const local = new Date(date + "T" + time)
+      const iso = local.toISOString()
       const ref = fb.doc(db, "users", state.u.uid, "events", id)
       await fb.updateDoc(ref, {
         title,
@@ -155,6 +176,7 @@ export async function saveEvFromForm({ id, title, date, time, repeat, remindMinu
         updatedAt: fb.serverTimestamp()
       })
     }
+
     await loadEv()
   } finally {
     fnLd(false)
